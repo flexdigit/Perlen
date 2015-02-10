@@ -5,9 +5,9 @@ use warnings;
 use DBI;
 
 my $dbh = DBI->connect(
-                    "dbi:SQLite:dbname=Gasmeter.db",
-                    { RaiseError => 1 }
-               ) or die $DBI::errstr;
+            "dbi:SQLite:dbname=Gasmeter.db",
+            { RaiseError => 1 }
+) or die $DBI::errstr;
 
 # SQL-Query
 my $sql_query = "SELECT tstamp,
@@ -21,7 +21,7 @@ my $sql_query = "SELECT tstamp,
         WHEN 0 THEN 'Sunday'
         ELSE 'fehler' END,
     SUM(tick)
-    FROM gascounter WHERE tstamp BETWEEN DATE('now', '-7 days') AND DATE('now')
+    FROM gascounter WHERE tstamp BETWEEN DATE('now', '-20 days') AND DATE('now')
     GROUP BY strftime('%w', tstamp)
     ORDER BY tstamp";
 
@@ -30,20 +30,12 @@ my $res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
 
 foreach my $row (@$res) {
     my ($tstamp, $day, $ticks) = @$row;
-    #print("$tstamp : $day : $ticks\n");
-    print("$day : $ticks\n");
+    my @tmp = split (/ /, $tstamp);
+    #print("$tmp[0] : $day : $ticks\n");
+    printf("%-1s %-10s %-10s\n",$tmp[0], $day, $ticks);
 }
 
-# SQL-query for last entry in table gascounter
-$sql_query = "SELECT max(tstamp) FROM gascounter";
-$res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
-
-foreach my $row (@$res) {
-    my ($last_entry) = @$row;
-    print("Last entry in DB: $last_entry\n");
-}
 
 
 #if ($dbh->err()) { die "$DBI::errstr\n"; }
 $dbh->disconnect();
-
