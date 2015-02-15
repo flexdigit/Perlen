@@ -104,8 +104,6 @@ for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same num
     $HlpTable .= "</tr>\n";
 }
 $HlpTable .= "</table>\n";
-#$HlpTable .= "</body>\n";
-#$HlpTable .= "</html>\n";
 
 ######################################
 #
@@ -130,7 +128,6 @@ for my $i(0..$#indexHtmArr)
 # of an html page.
 #
 $HlpString .= "Last entry into DB:\n".$LastEntry;
-#$HlpString  .= "</table>\n\n\n";
 $HlpString  .= "</body>\n";
 $HlpString  .= "</html>\n";
 
