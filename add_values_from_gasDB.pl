@@ -6,10 +6,14 @@ use DBI;
 use File::Copy;
 
 # for development on Desktop
-my $path2GasDB="/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $path2GasDB="/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
 
 # for productiv run on Pi #1
-#my $path2GasDB="/home/pi/GPIO/Gasmeter.db";
+my $path2GasDB="/home/pi/GPIO/Gasmeter.db";
+
+
+my $index     = "/home/pi/temperature/index.htm";
+my $index_OLD = "/home/pi/temperature/index_OLD.htm";
 
 my @indexHtmArr;        # Array which contains the file index.htm
 my @tstampArr;          # Array which contains the tstamp values from the DB
@@ -72,8 +76,6 @@ $dbh->disconnect();
 #
 # check if index.htm is already there, if so copy it to index_OLD.htm
 # and generate next a new index.htm
-my $index     = "/home/georg/Rasp-Pis/No1/temperature/index.htm";
-my $index_OLD = "/home/georg/Rasp-Pis/No1/temperature/index_OLD.htm";
 if(-e $index)
 {
     print $index,"\nexist already, will be renamed to\n". $index_OLD."\n";
