@@ -1,0 +1,108 @@
+#!/usr/bin/perl -w
+ 
+use warnings;
+use strict;
+use GD::Graph::area;
+use DBI;
+
+##################################################
+# for development on Desktop
+#
+my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+
+##################################################
+# for productiv run on Pi #1
+#
+#my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+
+# open DB
+my $dbh = DBI->connect(
+                        "dbi:SQLite:dbname=$path2GasDB",
+                        { RaiseError => 1 }
+                      ) or die $DBI::errstr;
+
+my $sql_query = "select tstamp, 
+        case cast (strftime('%H', tstamp) as integer)
+            when 00 then '0'
+            when 01 then '1'
+            when 02 then '2'
+            when 03 then '3'
+            when 04 then '4'
+            when 05 then '5'
+            when 06 then '6'
+            when 07 then '7'
+            when 08 then '8'
+            when 09 then '9'
+            when 10 then '10'
+            when 11 then '11'
+            when 12 then '12'
+            when 13 then '13'
+            when 14 then '14'
+            when 15 then '15'
+            when 16 then '16'
+            when 17 then '17'
+            when 18 then '18'
+            when 19 then '19'
+            when 20 then '20'
+            when 21 then '21'
+            when 22 then '22'
+            when 23 then '23'
+            when 24 then '24'
+        else 'fehler' end,
+        sum(tick) from gascounter where date(tstamp) = date('now', '-1 days')
+        GROUP BY strftime('%H', tstamp)
+        ORDER BY tstamp";
+
+# request SQL query
+my $res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
+
+my @hourArr;
+my @gasArr;
+# save what we got from SQL query
+foreach my $row (@$res)
+{
+    my ($tstamp, $h_per_day, $gas_consume) = @$row;
+    #push(@tstampArr, $tstamp);
+    push(@hourArr, $h_per_day);
+    push(@gasArr, $gas_consume);
+    #my @tmp = split (/ /, $tstamp);
+    printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
+}
+
+#exit;
+
+
+my @x;
+my @y;
+ 
+for (my $i = 0; $i < 2 * 100; $i++) {
+    $x[$i] = $i * 0.1;
+    $y[$i] = sin($x[$i]);
+}
+ 
+my $graph = GD::Graph::area->new(1600, 600);
+$graph->set(
+    x_label           => 'x',
+    y_label           => 'gas consumption [m^3]',
+    title             => 'Gas consumption per day [h]',
+    y_max_value       => 200,
+    y_min_value       => 0.0,
+    y_tick_number     => 4,
+    y_label_skip      => 1,
+    x_label_skip      => 1,
+    transparent       => 0,
+    bgclr             => 'white',
+    long_ticks        => 1,
+) or die $graph->error;
+ 
+#my @data = (\@x,\@y);
+my @data = (\@hourArr,\@gasArr);
+$graph->set( dclrs => [ qw(green pink blue cyan) ] );
+my $gd = $graph->plot(\@data) or die $graph->error;
+ 
+open(IMG, '>gd_area.png') or die $!;
+binmode IMG;
+print IMG $gd->png;
+
+
+
