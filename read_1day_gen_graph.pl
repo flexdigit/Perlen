@@ -4,16 +4,17 @@ use warnings;
 use strict;
 use GD::Graph::area;
 use DBI;
+use List::Util qw( min max );
 
 ##################################################
 # for development on Desktop
 #
-my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
 
 ##################################################
 # for productiv run on Pi #1
 #
-#my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
 
 # open DB
 my $dbh = DBI->connect(
@@ -49,7 +50,7 @@ my $sql_query = "select tstamp,
             when 23 then '23'
             when 24 then '24'
         else 'fehler' end,
-        sum(tick) from gascounter where date(tstamp) = date('now', '-1 days')
+        sum(tick) from gascounter where date(tstamp) = date('now')
         GROUP BY strftime('%H', tstamp)
         ORDER BY tstamp";
 
@@ -66,8 +67,10 @@ foreach my $row (@$res)
     push(@hourArr, $h_per_day);
     push(@gasArr, $gas_consume);
     #my @tmp = split (/ /, $tstamp);
-    printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
+    #printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
 }
+
+my $maxYAxisValue = max @gasArr;
 
 #exit;
 
@@ -80,12 +83,13 @@ for (my $i = 0; $i < 2 * 100; $i++) {
     $y[$i] = sin($x[$i]);
 }
  
-my $graph = GD::Graph::area->new(1600, 600);
+#my $graph = GD::Graph::area->new(1600, 600);
+my $graph = GD::Graph::area->new(720, 340);
 $graph->set(
-    x_label           => 'x',
+    x_label           => 'hour',
     y_label           => 'gas consumption [m^3]',
     title             => 'Gas consumption per day [h]',
-    y_max_value       => 200,
+    y_max_value       => $maxYAxisValue,
     y_min_value       => 0.0,
     y_tick_number     => 4,
     y_label_skip      => 1,
@@ -100,7 +104,8 @@ my @data = (\@hourArr,\@gasArr);
 $graph->set( dclrs => [ qw(green pink blue cyan) ] );
 my $gd = $graph->plot(\@data) or die $graph->error;
  
-open(IMG, '>gd_area.png') or die $!;
+#open(IMG, '>gd_area.png') or die $!;
+open(IMG, '>/home/pi/temperature/gas_per_day.png') or die $!;
 binmode IMG;
 print IMG $gd->png;
 
