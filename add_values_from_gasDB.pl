@@ -1,5 +1,9 @@
 #!/usr/bin/perl -w
-
+#####################################################################
+# 
+# Script adds some values and a weektable to the index.htm
+# 
+#####################################################################
 use strict;
 use warnings;
 use DBI;
@@ -8,16 +12,16 @@ use File::Copy;
 ##################################################
 # for development on Desktop
 #
-my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
-my $index     = "/home/georg/Rasp-Pis/No1/temperature/index.htm";
-my $index_OLD = "/home/georg/Rasp-Pis/No1/temperature/index_OLD.htm";
+#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $index     = "/home/georg/Rasp-Pis/No1/temperature/index.htm";
+#my $index_OLD = "/home/georg/Rasp-Pis/No1/temperature/index_OLD.htm";
 
 ##################################################
 # for productiv run on Pi #1
 #
-#my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
-#my $index     = "/home/pi/temperature/index.htm";
-#my $index_OLD = "/home/pi/temperature/index_OLD.htm";
+my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+my $index     = "/home/pi/temperature/index.htm";
+my $index_OLD = "/home/pi/temperature/index_OLD.htm";
 
 my @indexHtmArr;        # Array which contains the file index.htm
 my @tstampArr;          # Array which contains the tstamp values from the DB
@@ -25,8 +29,8 @@ my @dayArr;             # Array which contains the days from DB
 my @ticksArr;           # Array which contains the sum of ticks from DB
 my $HlpString;          # Temporary scalar to save condent of index.htm
 my $HlpTable;           # Temporary scalar for additional Gasmeter-table
-my $LastEntry;          # Temporary scalar for last line in DB
-my $StartValue = 9055.678;         # Start value for calculating the actual Gas meter value
+my $LastEntry  = 0;     # Temporary scalar for last line in DB
+my $StartValue = 9025.709;         # Start value for calculating the actual Gas meter value
 my $TotalValue;         # Total Gasmeter value
 
 ######################################
@@ -83,7 +87,7 @@ foreach my $row (@$res)
     my ($tstamp, $day, $ticks) = @$row;
     push(@tstampArr, $tstamp);
     push(@dayArr, $day);
-    push(@ticksArr, $ticks);
+    push(@ticksArr, $ticks * 0.01);
     #my @tmp = split (/ /, $tstamp);
     #printf("%-1s %-10s %-10s\n",$tmp[0], $day, $ticks);
 }
@@ -107,12 +111,13 @@ foreach my $row (@$res)
 #
 # Build together new Gasmeter table (week overview)
 #
-$HlpTable  = "\nGasmeter\n";
-$HlpTable .= "<table border=2 frame=hsides rules=all>\n";
+#$HlpTable  = "\nGasmeter\n";
+$HlpTable  = "<table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "<caption><bold>Gasmeter</bold></caption>\n";
 $HlpTable .= "<tr>\n";
-$HlpTable .= "<th bgcolor=#0080FF>Date</th>
-              <th bgcolor=#0080FF>Day</th>
-              <th bgcolor=#0080FF>m&sup3;</th>";
+$HlpTable .= "<th bgcolor=#d2b48c>Date</th>
+              <th bgcolor=#d2b48c>Day</th>
+              <th bgcolor=#d2b48c>m&sup3;</th>";
 $HlpTable .= "<\/tr>";
 for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
 {
@@ -144,18 +149,19 @@ for my $i(0..$#indexHtmArr)
 #
 # Add total value of Gasmeter into index.htm
 #
-my $sql_query_all_ticks = "SELECT sum(tstamp) FROM gascounter";
+my $sql_query_all_ticks = "SELECT sum(tick) FROM gascounter";
 
 # request SQL query
 $res = $dbh->selectall_arrayref($sql_query_all_ticks) or die $dbh->errstr();
 
 # save what we got from SQL query
-my $hlpval;
+my $hlpval = 0;
 foreach my $row (@$res)
 {
     ($hlpval) = @$row;
     #print $hlpval."\n";
 }
+#print $hlpval."\n";
 
 # round on 3 decimal places
 $TotalValue = sprintf("%.3f", ($StartValue + $hlpval * 0.01) );
@@ -168,9 +174,19 @@ $HlpString .= "\nTotal value:\t\t$TotalValue m&sup3;\n\n";
 # of an html page.
 #
 $HlpString .= "Last entry into DB:\t".$LastEntry;
+
+######################################
+#
+# Add daily graph
+#
+$HlpString .= "\n\n    <img src=\"gas_per_day.png\">\n\n";
+
+######################################
+#
+# Add end of html page
+#
 $HlpString .= "</body>\n";
 $HlpString .= "</html>\n";
-
 
 ######################################
 #
