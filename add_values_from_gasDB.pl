@@ -61,7 +61,7 @@ my $dbh = DBI->connect(
 
 ######################################
 #
-# fetsch info for weekoverview                
+# fetch info for weekoverview                
 #
 my $sql_query = "SELECT tstamp,
     CASE CAST (strftime('%w', tstamp) as integer)
