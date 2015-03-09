@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use GD::Graph::area;
 use DBI;
+use List::Util qw( min max );
 
 ##################################################
 # for development on Desktop
@@ -69,6 +70,8 @@ foreach my $row (@$res)
     #printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
 }
 
+my $maxYAxisValue = max @gasArr;
+
 #exit;
 
 
@@ -86,7 +89,7 @@ $graph->set(
     x_label           => 'hour',
     y_label           => 'gas consumption [m^3]',
     title             => 'Gas consumption per day [h]',
-    y_max_value       => 100,
+    y_max_value       => $maxYAxisValue,
     y_min_value       => 0.0,
     y_tick_number     => 4,
     y_label_skip      => 1,
