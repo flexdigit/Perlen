@@ -65,7 +65,7 @@ foreach my $row (@$res)
     my ($tstamp, $h_per_day, $gas_consume) = @$row;
     #push(@tstampArr, $tstamp);
     push(@hourArr, $h_per_day);
-    push(@gasArr, $gas_consume);
+    push(@gasArr, $gas_consume * 0.01);
     #my @tmp = split (/ /, $tstamp);
     #printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
 }
@@ -84,7 +84,7 @@ for (my $i = 0; $i < 2 * 100; $i++) {
 }
  
 #my $graph = GD::Graph::area->new(1600, 600);
-my $graph = GD::Graph::area->new(720, 340);
+my $graph = GD::Graph::area->new(500, 250);
 $graph->set(
     x_label           => 'hour',
     y_label           => 'gas consumption [m^3]',
@@ -95,13 +95,16 @@ $graph->set(
     y_label_skip      => 1,
     x_label_skip      => 1,
     transparent       => 0,
-    bgclr             => 'white',
+    #bgclr             => 'white',
     long_ticks        => 1,
 ) or die $graph->error;
  
 #my @data = (\@x,\@y);
 my @data = (\@hourArr,\@gasArr);
-$graph->set( dclrs => [ qw(green pink blue cyan) ] );
+$graph->set( dclrs => [ qw(green) ] );
+$graph->set_legend_font('GD::gdMediumBoldFont');
+$graph->set_legend('Gas consumption per hour per day');
+
 my $gd = $graph->plot(\@data) or die $graph->error;
  
 #open(IMG, '>gd_area.png') or die $!;
