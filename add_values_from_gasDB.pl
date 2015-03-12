@@ -112,13 +112,14 @@ foreach my $row (@$res)
 # Build together new Gasmeter table (week overview)
 #
 #$HlpTable  = "\nGasmeter\n";
-$HlpTable  = "<table border=2 frame=hsides rules=all>\n";
+$HlpTable  = "\n<table border=2 frame=hsides rules=all>\n";
 $HlpTable .= "<caption><bold>Gasmeter</bold></caption>\n";
 $HlpTable .= "<tr>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>Date</th>
-              <th bgcolor=#d2b48c>Day</th>
-              <th bgcolor=#d2b48c>m&sup3;</th>";
+$HlpTable .= "<th bgcolor=#d2b48c>Date</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>Day</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
 $HlpTable .= "<\/tr>";
+
 for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
 {
     $HlpTable .= "<tr>\n";
