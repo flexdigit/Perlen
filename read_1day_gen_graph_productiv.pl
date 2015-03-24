@@ -5,6 +5,8 @@ use strict;
 use GD::Graph::area;
 use DBI;
 use List::Util qw( min max );
+use Time::Piece;                # For the date in the graph
+
 
 ##################################################
 # for development on Desktop
@@ -74,21 +76,15 @@ my $maxYAxisValue = max @gasArr;
 
 #exit;
 
-
-my @x;
-my @y;
- 
-for (my $i = 0; $i < 2 * 100; $i++) {
-    $x[$i] = $i * 0.1;
-    $y[$i] = sin($x[$i]);
-}
+my $date = localtime->strftime('%a, %d.%m.%Y');
  
 #my $graph = GD::Graph::area->new(1600, 600);
 my $graph = GD::Graph::area->new(500, 250);
 $graph->set(
-    x_label           => 'hour',
+    x_label           => '[h]',
     y_label           => 'gas consumption [m^3]',
-    title             => 'Gas consumption per day [h]',
+    #title             => 'Gas consumption per day [h]',
+    title             => 'Gas consumption on '. $date,
     y_max_value       => $maxYAxisValue,
     y_min_value       => 0.0,
     y_tick_number     => 4,
@@ -99,11 +95,11 @@ $graph->set(
     long_ticks        => 1,
 ) or die $graph->error;
  
-#my @data = (\@x,\@y);
 my @data = (\@hourArr,\@gasArr);
+$date = localtime->strftime('%Y');
 $graph->set( dclrs => [ qw(green) ] );
 $graph->set_legend_font('GD::gdMediumBoldFont');
-$graph->set_legend('Gas consumption per hour per day');
+$graph->set_legend('Gas consumption per hour for one day - C '.$date.' flexdigit');
 
 my $gd = $graph->plot(\@data) or die $graph->error;
  
