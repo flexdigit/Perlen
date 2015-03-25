@@ -1,112 +1,281 @@
 #!/usr/bin/perl -w
- 
-use warnings;
+#####################################################################
+# 
+# Script adds some values and a weektable to the index.htm
+# 
+#####################################################################
 use strict;
-use GD::Graph::area;
+use warnings;
 use DBI;
-use List::Util qw( min max );
-use Time::Piece;                # For the date in the graph
-
+use File::Copy;
 
 ##################################################
 # for development on Desktop
 #
 #my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $index     = "/home/georg/Rasp-Pis/No1/temperature/index.htm";
+#my $index_OLD = "/home/georg/Rasp-Pis/No1/temperature/index_OLD.htm";
 
 ##################################################
 # for productiv run on Pi #1
 #
 my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+my $index     = "/home/pi/temperature/index.htm";
+my $index_OLD = "/home/pi/temperature/index_OLD.htm";
+
+my @indexHtmArr;        # Array which contains the file index.htm
+my @tstampArr;          # Array which contains the tstamp values from the DB
+my @dayArr;             # Array which contains the days from DB
+my @ticksArr;           # Array which contains the sum of ticks from DB
+my $HlpString;          # Temporary scalar to save condent of index.htm
+my $HlpTable;           # Temporary scalar for additional Gasmeter-table
+my $LastEntry  = 0;     # Temporary scalar for last line in DB
+my $StartValue = 9025.709;         # Start value for calculating the actual Gas meter value
+my $TotalValue;         # Total Gasmeter value
+
+######################################
+#
+# read index.htm into a array
+#
+# check if index.htm is already there, if so copy it
+# to index_OLD.htm and generate next a new index.htm
+if(-e $index)
+{
+    print $index,"\nexist already, will be renamed to\n". $index_OLD."\n";
+    copy($index, $index_OLD);
+    # read file into array
+    open (_IN_, "<", $index) or die "\n Can not open $index: $!\n";
+    @indexHtmArr = <_IN_>;
+    close (_IN_);
+}
+else
+{
+    print "\nindex.htm not available...\n\n";
+}
 
 # open DB
 my $dbh = DBI->connect(
-                        "dbi:SQLite:dbname=$path2GasDB",
-                        { RaiseError => 1 }
-                      ) or die $DBI::errstr;
+                    "dbi:SQLite:dbname=$path2GasDB",
+                    { RaiseError => 1 }
+                ) or die $DBI::errstr;
 
-my $sql_query = "select tstamp, 
-        case cast (strftime('%H', tstamp) as integer)
-            when 00 then '0'
-            when 01 then '1'
-            when 02 then '2'
-            when 03 then '3'
-            when 04 then '4'
-            when 05 then '5'
-            when 06 then '6'
-            when 07 then '7'
-            when 08 then '8'
-            when 09 then '9'
-            when 10 then '10'
-            when 11 then '11'
-            when 12 then '12'
-            when 13 then '13'
-            when 14 then '14'
-            when 15 then '15'
-            when 16 then '16'
-            when 17 then '17'
-            when 18 then '18'
-            when 19 then '19'
-            when 20 then '20'
-            when 21 then '21'
-            when 22 then '22'
-            when 23 then '23'
-            when 24 then '24'
-        else 'fehler' end,
-        sum(tick) from gascounter where date(tstamp) = date('now')
-        GROUP BY strftime('%H', tstamp)
-        ORDER BY tstamp";
+######################################
+#
+# fetch info for weekoverview                
+#
+my $sql_query = "SELECT tstamp,
+    CASE CAST (strftime('%w', tstamp) as integer)
+        WHEN 1 THEN 'Monday'
+        WHEN 2 THEN 'Tuesday'
+        WHEN 3 THEN 'Wednesday'
+        WHEN 4 THEN 'Thursday'
+        WHEN 5 THEN 'Friday'
+        WHEN 6 THEN 'Saturday'
+        WHEN 0 THEN 'Sunday'
+        ELSE 'fehler' END,
+    SUM(tick)
+    FROM gascounter WHERE tstamp BETWEEN DATE('now', '-7 days') AND DATE('now')
+    GROUP BY strftime('%w', tstamp)
+    ORDER BY tstamp";
 
 # request SQL query
 my $res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
 
-my @hourArr;
-my @gasArr;
 # save what we got from SQL query
 foreach my $row (@$res)
 {
-    my ($tstamp, $h_per_day, $gas_consume) = @$row;
-    #push(@tstampArr, $tstamp);
-    push(@hourArr, $h_per_day);
-    push(@gasArr, $gas_consume * 0.01);
+    my ($tstamp, $day, $ticks) = @$row;
+    push(@tstampArr, $tstamp);
+    push(@dayArr, $day);
+    push(@ticksArr, $ticks * 0.01);
     #my @tmp = split (/ /, $tstamp);
-    #printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
+    #printf("%-1s %-10s %-10s\n",$tmp[0], $day, $ticks);
 }
 
-my $maxYAxisValue = max @gasArr;
+######################################
+#
+# fetch info for year overview
+#
+my $year_sql_query = "select tstamp, 
+                    case cast (strftime('%m', tstamp) as integer)
+                        when 01 then 'Jan'
+                        when 02 then 'Feb'
+                        when 03 then 'Mar'
+                        when 04 then 'Apr'
+                        when 05 then 'May'
+                        when 06 then 'June'
+                        when 07 then 'July'
+                        when 08 then 'Aug'
+                        when 09 then 'Sep'
+                        when 10 then 'Oct'
+                        when 11 then 'Nov'
+                        when 12 then 'Dez'
+                        else 'fehler' end,
+                    sum(tick) FROM gascounter
+                    WHERE tstamp BETWEEN DATE('now', '-365 days') AND DATE('now')
+                    GROUP BY strftime('%m', tstamp)
+                    ORDER BY tstamp";
 
-#exit;
+# request SQL query
+$res = $dbh->selectall_arrayref($year_sql_query) or die $dbh->errstr();
 
-my $date = localtime->strftime('%a, %d.%m.%Y');
- 
-#my $graph = GD::Graph::area->new(1600, 600);
-my $graph = GD::Graph::area->new(500, 250);
-$graph->set(
-    x_label           => '[h]',
-    y_label           => 'gas consumption [m^3]',
-    #title             => 'Gas consumption per day [h]',
-    title             => 'Gas consumption on '. $date,
-    y_max_value       => $maxYAxisValue,
-    y_min_value       => 0.0,
-    y_tick_number     => 4,
-    y_label_skip      => 1,
-    x_label_skip      => 1,
-    transparent       => 0,
-    #bgclr             => 'white',
-    long_ticks        => 1,
-) or die $graph->error;
- 
-my @data = (\@hourArr,\@gasArr);
-$date = localtime->strftime('%Y');
-$graph->set( dclrs => [ qw(green) ] );
-$graph->set_legend_font('GD::gdMediumBoldFont');
-$graph->set_legend('Gas consumption per hour for one day - C '.$date.' flexdigit');
+#my @monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dez'];
+my @monthArr;
+my @gasArr;
 
-my $gd = $graph->plot(\@data) or die $graph->error;
- 
-#open(IMG, '>gd_area.png') or die $!;
-open(IMG, '>/home/pi/temperature/gas_per_day.png') or die $!;
-binmode IMG;
-print IMG $gd->png;
+# save what we got from SQL query
+foreach my $row (@$res)
+{
+    my ($tstamp, $month, $gas_consume) = @$row;
+    push(@monthArr, $month);
+    push(@gasArr, $gas_consume * 0.01);
+    #printf("%-1s %-10s %-10s\n",$tstamp, $month, $gas_consume);
+    #printf("%-10s %-10s\n", $month, $gas_consume);
+}
 
+
+######################################
+#
+# find out the last line/entry in the Gascounter-DB
+my $sql_query_last_line = "SELECT max(tstamp) FROM gascounter";
+
+# request SQL query
+$res = $dbh->selectall_arrayref($sql_query_last_line) or die $dbh->errstr();
+
+# save what we got from SQL query
+foreach my $row (@$res)
+{
+    ($LastEntry) = @$row;
+    #print $LastEntry."\n";
+}
+
+######################################
+#
+# Start to build "master" table with one row and two columns
+#
+$HlpTable  = "\n<table>\n";             # start master table
+$HlpTable .= "<tr valign=\"top\">\n";   # start the only row
+$HlpTable .= "<td>\n";                  # start first column
+
+######################################
+#
+# Build together new Gasmeter table (week overview)
+#
+$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "<caption><bold>Gasmeter/week</bold></caption>\n";
+$HlpTable .= "<tr>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>Date</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>Day</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
+$HlpTable .= "</tr>\n";
+
+for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
+{
+    $HlpTable .= "<tr>\n";
+    $HlpTable .= "<td>$tstampArr[$i]</td><td>$dayArr[$i]</td><td>$ticksArr[$i]</td>\n";
+    $HlpTable .= "</tr>\n";
+}
+$HlpTable .= "</table>\n";  # end week overview table
+$HlpTable .= "</td>\n";     # end first column
+
+#$HlpTable .= "\n";
+$HlpTable .= "<td>\n";      # start secound column
+
+######################################
+#
+# Build together new year overview
+#
+$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "<caption><bold>Gasmeter/year</bold></caption>\n";
+$HlpTable .= "<tr>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>Month</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
+$HlpTable .= "</tr>\n";
+
+for my $i(0..$#monthArr)   # @monthArr, @gasArr has the same number of indexs
+{
+    $HlpTable .= "<tr>\n";
+    $HlpTable .= "<td>$monthArr[$i]</td><td>$gasArr[$i]</td>\n";
+    $HlpTable .= "</tr>\n";
+}
+$HlpTable .= "</table>\n";  # end year overview table
+
+$HlpTable .= "</td>\n";     # end secound column
+
+$HlpTable .= "</tr>\n";     # end the only row
+$HlpTable .= "</table>\n";  # end master table
+
+######################################
+# week overview:
+# Add new Gasmeter table (week overview) to content
+# of index.htm
+#
+for my $i(0..$#indexHtmArr)
+{
+    $HlpString .= $indexHtmArr[$i];
+    
+    if($indexHtmArr[$i] =~ /<\/table>/)
+    {
+        
+        #print "FOUND: $indexHtmArr[$i]";
+        $HlpString .= $HlpTable;
+        last;
+    }
+}
+
+######################################
+#
+# Add total value of Gasmeter into index.htm
+#
+my $sql_query_all_ticks = "SELECT sum(tick) FROM gascounter";
+
+# request SQL query
+$res = $dbh->selectall_arrayref($sql_query_all_ticks) or die $dbh->errstr();
+
+# save what we got from SQL query
+my $hlpval = 0;
+foreach my $row (@$res)
+{
+    ($hlpval) = @$row;
+    #print $hlpval."\n";
+}
+#print $hlpval."\n";
+
+# round on 3 decimal places
+$TotalValue = sprintf("%.3f", ($StartValue + $hlpval * 0.01) );
+
+$HlpString .= "\nTotal value:\t\t$TotalValue m&sup3;\n\n";
+
+######################################
+#
+# Add last entry, made into DB, into index.htm and add the end
+# of an html page.
+#
+$HlpString .= "Last entry into DB:\t".$LastEntry;
+
+######################################
+#
+# Add daily graph
+#
+$HlpString .= "\n\n    <img src=\"gas_per_day.png\">\n\n";
+
+######################################
+#
+# Add end of html page
+#
+$HlpString .= "</body>\n";
+$HlpString .= "</html>\n";
+
+######################################
+#
+# Print new index.htm
+#
+open (_IN_, ">", $index) or die "\n Can not generate $index: $!\n";
+print _IN_ $HlpString;
+close (_IN_);
+
+# close DB connection
+#if ($dbh->err()) { die "$DBI::errstr\n"; }
+$dbh->disconnect();
 
 
