@@ -63,7 +63,7 @@ my $dbh = DBI->connect(
 #
 # fetch info for weekoverview                
 #
-my $sql_query = "SELECT tstamp,
+my $week_sql_query = "SELECT tstamp,
     CASE CAST (strftime('%w', tstamp) as integer)
         WHEN 1 THEN 'Monday'
         WHEN 2 THEN 'Tuesday'
@@ -79,7 +79,7 @@ my $sql_query = "SELECT tstamp,
     ORDER BY tstamp";
 
 # request SQL query
-my $res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
+my $res = $dbh->selectall_arrayref($week_sql_query) or die $dbh->errstr();
 
 # save what we got from SQL query
 foreach my $row (@$res)
@@ -119,21 +119,37 @@ my $year_sql_query = "select tstamp,
 # request SQL query
 $res = $dbh->selectall_arrayref($year_sql_query) or die $dbh->errstr();
 
-#my @monthArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dez'];
-my @monthArr;
-my @gasArr;
+# fill hash per default
+my %yearHash = (
+    Jan  => 0,
+    Feb  => 0,
+    Mar  => 0,
+    Apr  => 0,
+    May  => 0,
+    Jun  => 0,
+    Jul  => 0,
+    Aug  => 0,
+    Sep  => 0,
+    Oct  => 0,
+    Nov  => 0,
+    Dez  => 0,
+);
+
+# fill month array for correct sequence during print
+my @monthArr = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dez);
 
 # save what we got from SQL query
 foreach my $row (@$res)
 {
     my ($tstamp, $month, $gas_consume) = @$row;
-    push(@monthArr, $month);
-    push(@gasArr, $gas_consume * 0.01);
-    #printf("%-1s %-10s %-10s\n",$tstamp, $month, $gas_consume);
-    #printf("%-10s %-10s\n", $month, $gas_consume);
+    $yearHash{$month} = $gas_consume * 0.01;
 }
 
-
+# print yearHash for tests
+#for my $i(0..$#monthArr)
+#{
+#    print "$monthArr[$i]: $yearHash{$monthArr[$i]}\n";
+#}
 ######################################
 #
 # find out the last line/entry in the Gascounter-DB
@@ -192,12 +208,13 @@ $HlpTable .= "<th bgcolor=#d2b48c>Month</th>\n";
 $HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
 $HlpTable .= "</tr>\n";
 
-for my $i(0..$#monthArr)   # @monthArr, @gasArr has the same number of indexs
+for my $i(0..$#monthArr)
 {
     $HlpTable .= "<tr>\n";
-    $HlpTable .= "<td>$monthArr[$i]</td><td>$gasArr[$i]</td>\n";
+    $HlpTable .= "<td>$monthArr[$i]</td><td>$yearHash{$monthArr[$i]}</td>\n";
     $HlpTable .= "</tr>\n";
 }
+
 $HlpTable .= "</table>\n";  # end year overview table
 
 $HlpTable .= "</td>\n";     # end secound column
