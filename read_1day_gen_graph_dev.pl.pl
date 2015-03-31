@@ -61,36 +61,16 @@ my $res = $dbh->selectall_arrayref($day_sql_query) or die $dbh->errstr();
 my @hourArr;
 my @gasArr;
 
-my %dayHash = (
-    0 => 0,
-    1 => 0,
-    2 => 0,
-    3 => 0,
-    4 => 0,
-    5 => 0,
-    6 => 0,
-    7 => 0,
-    8 => 0,
-    9 => 0,
-    10 => 0,
-    11 => 0,
-    12 => 0,
-    13 => 0,
-    14 => 0,
-    15 => 0,
-    16 => 0,
-    17 => 0,
-    18 => 0,
-    19 => 0,
-    20 => 0,
-    21 => 0,
-    22 => 0,
-    23 => 0,
-    24 => 0,    
-);
+my %dayHash = ( 0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0,
+                5 => 0, 6 => 0, 7 => 0, 8 => 0, 9 => 0,
+               10 => 0,11 => 0,12 => 0,13 => 0,14 => 0,
+               15 => 0,16 => 0,17 => 0,18 => 0,19 => 0,
+               20 => 0,21 => 0,22 => 0,23 => 0,24 => 0,
+              );
+
 # fill day hour array for correct sequence during print with a hash
 my @dayhourhArr = (0 .. 24);
-# to get the content from hash for graph
+# to get the content from hash for graph plot
 my @GasValues;
 
 # save what we got from SQL query
@@ -101,11 +81,9 @@ foreach my $row (@$res)
     #push(@hourArr, $h_per_day);
     #push(@gasArr, $gas_consume * 0.01);
     $dayHash{$h_per_day} = $gas_consume * 0.01;
-    #my @tmp = split (/ /, $tstamp);
-    #printf("%-1s %-10s %-10s\n",$tstamp, $h_per_day, $gas_consume);
 }
 
-# print dayHash for tests and push into @GasValues for data for graph
+# print dayHash for tests and push into @GasValues for data for graph plot
 for my $i(0..$#dayhourhArr)
 {
     push (@GasValues, $dayHash{$dayhourhArr[$i]});
@@ -113,8 +91,6 @@ for my $i(0..$#dayhourhArr)
 }
 
 my $maxYAxisValue = max @gasArr;    # max value for the y axis
-
-#exit;
  
 my $date = localtime->strftime('%a, %d.%m.%Y');
 
