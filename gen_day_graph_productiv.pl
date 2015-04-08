@@ -75,11 +75,15 @@ my @dayhourhArr = (0 .. 24);
 # to get the content from hash for graph plot
 my @GasValues;
 
+# to get the daily sum
+my $DailySum = 0;
+
 # save what we got from SQL query
 foreach my $row (@$res)
 {
     my ($tstamp, $h_per_day, $gas_consume) = @$row;
     $dayHash{$h_per_day} = $gas_consume * 0.01;
+    $DailySum = $DailySum + $gas_consume * 0.01;
 }
 
 # print dayHash for tests and push into @GasValues for data for graph plot
@@ -99,7 +103,7 @@ my $graph = GD::Graph::area->new(500, 250);
 $graph->set(
     x_label           => '[h]',
     y_label           => 'gas consumption [m^3]',
-    title             => 'Gas consumption on '.$date,
+    title             => 'Total gas consumption on '.$date.': '.$DailySum.' m^3',
     y_max_value       => $maxYAxisValue,
     y_min_value       => 0.0,
     #y_tick_number     => 4,
@@ -123,6 +127,4 @@ my $gd = $graph->plot(\@data) or die $graph->error;
 open(IMG, '>/home/pi/temperature/day_graph.png') or die $!;
 binmode IMG;
 print IMG $gd->png;
-
-
 
