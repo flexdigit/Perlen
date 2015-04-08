@@ -63,7 +63,7 @@ my $dbh = DBI->connect(
 #
 # fetch info for weekoverview                
 #
-my $sql_query = "SELECT tstamp,
+my $week_sql_query = "SELECT tstamp,
     CASE CAST (strftime('%w', tstamp) as integer)
         WHEN 1 THEN 'Monday'
         WHEN 2 THEN 'Tuesday'
@@ -79,7 +79,7 @@ my $sql_query = "SELECT tstamp,
     ORDER BY tstamp";
 
 # request SQL query
-my $res = $dbh->selectall_arrayref($sql_query) or die $dbh->errstr();
+my $res = $dbh->selectall_arrayref($week_sql_query) or die $dbh->errstr();
 
 # save what we got from SQL query
 foreach my $row (@$res)
@@ -92,6 +92,64 @@ foreach my $row (@$res)
     #printf("%-1s %-10s %-10s\n",$tmp[0], $day, $ticks);
 }
 
+######################################
+#
+# fetch info for year overview
+#
+my $year_sql_query = "select tstamp, 
+                    case cast (strftime('%m', tstamp) as integer)
+                        when 01 then 'Jan'
+                        when 02 then 'Feb'
+                        when 03 then 'Mar'
+                        when 04 then 'Apr'
+                        when 05 then 'May'
+                        when 06 then 'Jun'
+                        when 07 then 'Jul'
+                        when 08 then 'Aug'
+                        when 09 then 'Sep'
+                        when 10 then 'Oct'
+                        when 11 then 'Nov'
+                        when 12 then 'Dez'
+                        else 'fehler' end,
+                    sum(tick) FROM gascounter
+                    WHERE tstamp BETWEEN DATE('now', '-365 days') AND DATE('now')
+                    GROUP BY strftime('%m', tstamp)
+                    ORDER BY tstamp";
+
+# request SQL query
+$res = $dbh->selectall_arrayref($year_sql_query) or die $dbh->errstr();
+
+# fill hash per default
+my %yearHash = (
+    Jan  => 0,
+    Feb  => 0,
+    Mar  => 0,
+    Apr  => 0,
+    May  => 0,
+    Jun  => 0,
+    Jul  => 0,
+    Aug  => 0,
+    Sep  => 0,
+    Oct  => 0,
+    Nov  => 0,
+    Dez  => 0,
+);
+
+# fill month array for correct sequence during print with a hash
+my @monthArr = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dez);
+
+# save what we got from SQL query
+foreach my $row (@$res)
+{
+    my ($tstamp, $month, $gas_consume) = @$row;
+    $yearHash{$month} = $gas_consume * 0.01;
+}
+
+# print yearHash for tests
+for my $i(0..$#monthArr)
+{
+    #print "$monthArr[$i]: $yearHash{$monthArr[$i]}\n";
+}
 ######################################
 #
 # find out the last line/entry in the Gascounter-DB
@@ -109,16 +167,23 @@ foreach my $row (@$res)
 
 ######################################
 #
+# Start to build "master" table with one row and two columns
+#
+$HlpTable  = "\n<table>\n";             # start master table
+$HlpTable .= "<tr valign=\"top\">\n";   # start the only row
+$HlpTable .= "<td>\n";                  # start first column
+
+######################################
+#
 # Build together new Gasmeter table (week overview)
 #
-#$HlpTable  = "\nGasmeter\n";
-$HlpTable  = "\n<table border=2 frame=hsides rules=all>\n";
-$HlpTable .= "<caption><bold>Gasmeter</bold></caption>\n";
+$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "<caption><bold>Gasmeter/week</bold></caption>\n";
 $HlpTable .= "<tr>\n";
 $HlpTable .= "<th bgcolor=#d2b48c>Date</th>\n";
 $HlpTable .= "<th bgcolor=#d2b48c>Day</th>\n";
 $HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
-$HlpTable .= "<\/tr>";
+$HlpTable .= "</tr>\n";
 
 for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
 {
@@ -126,7 +191,36 @@ for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same num
     $HlpTable .= "<td>$tstampArr[$i]</td><td>$dayArr[$i]</td><td>$ticksArr[$i]</td>\n";
     $HlpTable .= "</tr>\n";
 }
-$HlpTable .= "</table>\n";
+$HlpTable .= "</table>\n";  # end week overview table
+$HlpTable .= "</td>\n";     # end first column
+
+#$HlpTable .= "\n";
+$HlpTable .= "<td>\n";      # start secound column
+
+######################################
+#
+# Build together new year overview
+#
+$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "<caption><bold>Gasmeter/year</bold></caption>\n";
+$HlpTable .= "<tr>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>Month</th>\n";
+$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
+$HlpTable .= "</tr>\n";
+
+for my $i(0..$#monthArr)
+{
+    $HlpTable .= "<tr>\n";
+    $HlpTable .= "<td>$monthArr[$i]</td><td>$yearHash{$monthArr[$i]}</td>\n";
+    $HlpTable .= "</tr>\n";
+}
+
+$HlpTable .= "</table>\n";  # end year overview table
+
+$HlpTable .= "</td>\n";     # end secound column
+
+$HlpTable .= "</tr>\n";     # end the only row
+$HlpTable .= "</table>\n";  # end master table
 
 ######################################
 # week overview:
@@ -180,7 +274,7 @@ $HlpString .= "Last entry into DB:\t".$LastEntry;
 #
 # Add daily graph
 #
-$HlpString .= "\n\n    <img src=\"gas_per_day.png\">\n\n";
+$HlpString .= "\n\n    <img src=\"day_graph.png\">\n\n";
 
 ######################################
 #
