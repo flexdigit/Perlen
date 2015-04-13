@@ -150,99 +150,10 @@ for my $i(0..$#monthArr)
 {
     #print "$monthArr[$i]: $yearHash{$monthArr[$i]}\n";
 }
-######################################
-#
-# find out the last line/entry in the Gascounter-DB
-my $sql_query_last_line = "SELECT max(tstamp) FROM gascounter";
-
-# request SQL query
-$res = $dbh->selectall_arrayref($sql_query_last_line) or die $dbh->errstr();
-
-# save what we got from SQL query
-foreach my $row (@$res)
-{
-    ($LastEntry) = @$row;
-    #print $LastEntry."\n";
-}
 
 ######################################
 #
-# Start to build "master" table with one row and two columns
-#
-$HlpTable  = "\n<table>\n";             # start master table
-$HlpTable .= "<tr valign=\"top\">\n";   # start the only row
-$HlpTable .= "<td>\n";                  # start first column
-
-######################################
-#
-# Build together new Gasmeter table (week overview)
-#
-$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
-$HlpTable .= "<caption><bold>Gasmeter/week</bold></caption>\n";
-$HlpTable .= "<tr>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>Date</th>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>Day</th>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
-$HlpTable .= "</tr>\n";
-
-for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
-{
-    $HlpTable .= "<tr>\n";
-    $HlpTable .= "<td>$tstampArr[$i]</td><td>$dayArr[$i]</td><td>$ticksArr[$i]</td>\n";
-    $HlpTable .= "</tr>\n";
-}
-$HlpTable .= "</table>\n";  # end week overview table
-$HlpTable .= "</td>\n";     # end first column
-
-#$HlpTable .= "\n";
-$HlpTable .= "<td>\n";      # start secound column
-
-######################################
-#
-# Build together new year overview
-#
-$HlpTable .= "\n<table border=2 frame=hsides rules=all>\n";
-$HlpTable .= "<caption><bold>Gasmeter/year</bold></caption>\n";
-$HlpTable .= "<tr>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>Month</th>\n";
-$HlpTable .= "<th bgcolor=#d2b48c>m&sup3;</th>\n";
-$HlpTable .= "</tr>\n";
-
-for my $i(0..$#monthArr)
-{
-    $HlpTable .= "<tr>\n";
-    $HlpTable .= "<td>$monthArr[$i]</td><td>$yearHash{$monthArr[$i]}</td>\n";
-    $HlpTable .= "</tr>\n";
-}
-
-$HlpTable .= "</table>\n";  # end year overview table
-
-$HlpTable .= "</td>\n";     # end secound column
-
-$HlpTable .= "</tr>\n";     # end the only row
-$HlpTable .= "</table>\n";  # end master table
-
-######################################
-# week overview:
-# Add new Gasmeter table (week overview) to content
-# of index.htm
-#
-for my $i(0..$#indexHtmArr)
-{
-    $HlpString .= $indexHtmArr[$i];
-    
-    if($indexHtmArr[$i] =~ /<\/table>/)
-    {
-        
-        #print "FOUND: $indexHtmArr[$i]";
-        $HlpString .= $HlpTable;
-        last;
-    }
-}
-
-######################################
-#
-# Add total value of Gasmeter into index.htm
+# Find out total value of Gasmeter into index.htm
 #
 my $sql_query_all_ticks = "SELECT sum(tick) FROM gascounter";
 
@@ -261,25 +172,126 @@ foreach my $row (@$res)
 # round on 3 decimal places
 $TotalValue = sprintf("%.3f", ($StartValue + $hlpval * 0.01) );
 
-$HlpString .= "\nTotal value:\t\t$TotalValue m&sup3;\n\n";
+######################################
+#
+# Find out the last line/entry in the Gascounter-DB
+#
+my $sql_query_last_line = "SELECT max(tstamp) FROM gascounter";
+
+# request SQL query
+$res = $dbh->selectall_arrayref($sql_query_last_line) or die $dbh->errstr();
+
+# save what we got from SQL query
+foreach my $row (@$res)
+{
+    ($LastEntry) = @$row;
+    #print $LastEntry."\n";
+}
 
 ######################################
 #
+# Add total value and 
 # Add last entry, made into DB, into index.htm and add the end
-# of an html page.
 #
-$HlpString .= "Last entry into DB:\t".$LastEntry;
+$HlpTable = "\n";
+$HlpTable .= "Total value:		".$TotalValue." m&sup3;\n";
+$HlpTable .= "\n";
+$HlpTable .= "Last entry into DB:\t".$LastEntry."\n";
 
 ######################################
 #
 # Add daily graph
 #
-$HlpString .= "\n\n    <img src=\"day_graph.png\">\n\n";
+$HlpTable .= "\n    <img src=\"day_graph.png\">\n";
+$HlpTable .= "\n";
+######################################
+#
+# Start to build table with two row and two columns
+#
+$HlpTable .= "<table>\n";               # start table
+$HlpTable .= "    <tr valign=\"top\">\n"; # start the first row
+$HlpTable .= "    <td>\n";                # start first column
+
+######################################
+#
+# Build together new Gasmeter table (week overview)
+#
+$HlpTable .= "        <table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "        <caption><bold>Gasmeter/week</bold></caption>\n";
+$HlpTable .= "        <tr>\n";
+$HlpTable .= "        <th bgcolor=#d2b48c>Date</th>\n";
+$HlpTable .= "        <th bgcolor=#d2b48c>Day</th>\n";
+$HlpTable .= "        <th bgcolor=#d2b48c>m&sup3;</th>\n";
+$HlpTable .= "        </tr>\n";
+
+for my $i(0..$#tstampArr)   # @tstampArr, @dayArr and @ticksArr has the same number of indexs
+{
+    $HlpTable .= "        <tr>\n";
+    $HlpTable .= "        <td>$tstampArr[$i]</td><td>$dayArr[$i]</td><td>$ticksArr[$i]</td>\n";
+    $HlpTable .= "        </tr>\n";
+}
+$HlpTable .= "        </table>\n";
+$HlpTable .= "    </td>\n";
+
+$HlpTable .= "    <td>\n";
+$HlpTable .= "        <img src=\"week_bars.png\">\n";
+$HlpTable .= "    <td>\n";
+$HlpTable .= "    </tr>\n";
+
+######################################
+#
+# Build together new year overview
+#
+$HlpTable .= "\n    <!-- Next line -->\n";
+$HlpTable .= "    <tr valign=\"top\">\n"; # start the first row
+$HlpTable .= "    <td>\n";                # start first column
+$HlpTable .= "        <table border=2 frame=hsides rules=all>\n";
+$HlpTable .= "        <caption><bold>Gasmeter/year</bold></caption>\n";
+$HlpTable .= "        <tr>\n";
+$HlpTable .= "        <th bgcolor=#d2b48c>Month</th>\n";
+$HlpTable .= "        <th bgcolor=#d2b48c>m&sup3;</th>\n";
+$HlpTable .= "        </tr>\n";
+
+for my $i(0..$#monthArr)
+{
+    $HlpTable .= "        <tr>\n";
+    $HlpTable .= "        <td>$monthArr[$i]</td><td>$yearHash{$monthArr[$i]}</td>\n";
+    $HlpTable .= "        </tr>\n";
+}
+
+$HlpTable .= "        </table>\n";  # end year overview table
+$HlpTable .= "    </td>\n";     # end secound column
+
+$HlpTable .= "    <td>\n";
+$HlpTable .= "        <img src=\"year_bars.png\">\n";
+$HlpTable .= "    <td>\n";
+$HlpTable .= "    </tr>\n";
+
+$HlpTable .= "</tr>\n";     # end the only row
+$HlpTable .= "</table>\n";  # end master table
+
+######################################
+# 
+# Add strings together... 
+#
+for my $i(0..$#indexHtmArr)
+{
+    $HlpString .= $indexHtmArr[$i];
+    
+    if($indexHtmArr[$i] =~ /<\/table>/)
+    {
+        
+        #print "FOUND: $indexHtmArr[$i]";
+        $HlpString .= $HlpTable;
+        last;
+    }
+}
 
 ######################################
 #
 # Add end of html page
 #
+$HlpString .= "\n\n";
 $HlpString .= "</body>\n";
 $HlpString .= "</html>\n";
 
@@ -294,5 +306,4 @@ close (_IN_);
 # close DB connection
 #if ($dbh->err()) { die "$DBI::errstr\n"; }
 $dbh->disconnect();
-
 
