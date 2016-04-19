@@ -39,7 +39,7 @@ my $year_sql_query = "select tstamp,
                         when 12 then 'Dez'
                         else 'fehler' end,
                     sum(tick) FROM gascounter
-                    WHERE tstamp BETWEEN DATE('now', '-365 days') AND DATE('now')
+                    WHERE tstamp BETWEEN DATE('now', 'start of year') AND DATE('now')
                     GROUP BY strftime('%m', tstamp)
                     ORDER BY tstamp";
 
