@@ -112,9 +112,14 @@ my $year_sql_query = "select tstamp,
                         when 12 then 'Dez'
                         else 'fehler' end,
                     sum(tick) FROM gascounter
-                    WHERE tstamp BETWEEN DATE('now', '-365 days') AND DATE('now')
+                    WHERE tstamp BETWEEN DATE('now', 'start of year') and DATE('now')
                     GROUP BY strftime('%m', tstamp)
                     ORDER BY tstamp";
+#             Das hier bringt mir z.B. auch Werte aus dem vorangegangen Jahr
+#             im Dezember, wenn es erst Juli ist.
+#                    WHERE tstamp BETWEEN DATE('now', '-365 days') AND DATE('now')
+#                    GROUP BY strftime('%m', tstamp)
+#                    ORDER BY tstamp";
 
 # request SQL query
 $res = $dbh->selectall_arrayref($year_sql_query) or die $dbh->errstr();
@@ -146,10 +151,10 @@ foreach my $row (@$res)
 }
 
 # print yearHash for tests
-for my $i(0..$#monthArr)
-{
-    #print "$monthArr[$i]: $yearHash{$monthArr[$i]}\n";
-}
+#for my $i(0..$#monthArr)
+#{
+#    print "$monthArr[$i]: $yearHash{$monthArr[$i]}\n";
+#}
 
 ######################################
 #
@@ -188,6 +193,9 @@ foreach my $row (@$res)
     #print $LastEntry."\n";
 }
 
+# Disconnect the DB
+$dbh->disconnect();
+
 ######################################
 #
 # Add total value and 
@@ -214,7 +222,7 @@ $HlpTable .= "    <td>\n";                # start first column
 
 ######################################
 #
-# Build together new Gasmeter table (week overview)
+# Build together Gasmeter/week table
 #
 $HlpTable .= "        <table border=2 frame=hsides rules=all>\n";
 $HlpTable .= "        <caption><bold>Gasmeter/week</bold></caption>\n";
@@ -240,7 +248,7 @@ $HlpTable .= "    </tr>\n";
 
 ######################################
 #
-# Build together new year overview
+# Build together Gasmeter/year table
 #
 $HlpTable .= "\n    <!-- Next line -->\n";
 $HlpTable .= "    <tr valign=\"top\">\n"; # start the first row
