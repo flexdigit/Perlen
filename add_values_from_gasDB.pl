@@ -12,9 +12,9 @@ use File::Copy;
 ##################################################
 # for development on Desktop
 #
-#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
-#my $index     = "/home/georg/Rasp-Pis/No1/temperature/index.htm";
-#my $index_OLD = "/home/georg/Rasp-Pis/No1/temperature/index_OLD.htm";
+#my $path2GasDB= "...";
+#my $index     = "...";
+#my $index_OLD = "...";
 
 ##################################################
 # for productiv run on Pi #1
