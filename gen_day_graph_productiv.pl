@@ -59,6 +59,9 @@ my $day_sql_query = "select tstamp,
 # request SQL query
 my $res = $dbh->selectall_arrayref($day_sql_query) or die $dbh->errstr();
 
+# Disconnect the DB
+$dbh->disconnect();
+
 my @hourArr;
 my @gasArr;
 
