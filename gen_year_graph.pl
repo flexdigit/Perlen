@@ -10,7 +10,7 @@ use Time::Piece;                # For the date in the graph
 ##################################################
 # for development on Desktop
 #
-#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $path2GasDB= "...";
 
 ##################################################
 # for productiv run on Pi #1
@@ -39,12 +39,15 @@ my $year_sql_query = "select tstamp,
                         when 12 then 'Dez'
                         else 'fehler' end,
                     sum(tick) FROM gascounter
-                    WHERE tstamp BETWEEN DATE('now', 'start of year') AND DATE('now')
+                    WHERE tstamp BETWEEN DATE('now', 'start of year') and DATE('now')
                     GROUP BY strftime('%m', tstamp)
                     ORDER BY tstamp";
 
 # request SQL query
 my $res = $dbh->selectall_arrayref($year_sql_query) or die $dbh->errstr();
+
+# Disconnect the DB
+$dbh->disconnect();
 
 # fill hash per default
 my %yearHash = (
@@ -81,7 +84,8 @@ for my $i(0..$#monthArr)
     push (@GasValues, $yearHash{$monthArr[$i]});
 }
 
-#my $maxYAxisValue = max @gasArr;    # max value for the y axis
+my $YearlySum = sum(@GasValues);
+
 my $maxYAxisValue = max values (%yearHash);     # max value for the y axis from a hash
 
 #exit;
@@ -93,7 +97,7 @@ my $graph = GD::Graph::bars->new(500, 250);
 $graph->set(
     x_label         => '[month]',
     y_label         => 'gas consumption [m^3]',
-    title           => 'Gas consumption for year '.$date,
+    title           => 'Total gas consumption for year '.$date.': '.$YearlySum.' m^3',
     
     # shadows
     bar_spacing     => 10,
@@ -115,7 +119,7 @@ my @data = (\@monthArr,\@GasValues);
 
 $graph->set( dclrs => [ qw(green) ] );
 $graph->set_legend_font('GD::gdMediumBoldFont');
-$graph->set_legend('Gas consumption for one week - (C) '.$date.' flexdigit');
+$graph->set_legend('Gas consumption for one year - (C) '.$date.' flexdigit');
 
 my $gd = $graph->plot(\@data) or die $graph->error;
  
