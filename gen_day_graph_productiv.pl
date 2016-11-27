@@ -11,7 +11,7 @@ use Time::Piece;                # For the date in the graph
 ##################################################
 # for development on Desktop
 #
-#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
+#my $path2GasDB= "....";
 
 ##################################################
 # for productiv run on Pi #1
