@@ -16,15 +16,15 @@ use Time::Piece;                # For the date in the graph
 ##################################################
 # for productiv run on Pi #1
 #
-my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+my $path2GasDB= "...";
 
-# open DB
+## open DB
 my $dbh = DBI->connect(
                         "dbi:SQLite:dbname=$path2GasDB",
                         { RaiseError => 1 }
                       ) or die $DBI::errstr;
 
-my $day_sql_query = "select tstamp, 
+my $day_sql_query = "select tstamp,
         case cast (strftime('%H', tstamp) as integer)
             when 00 then '0'
             when 01 then '1'
@@ -62,9 +62,6 @@ my $res = $dbh->selectall_arrayref($day_sql_query) or die $dbh->errstr();
 # Disconnect the DB
 $dbh->disconnect();
 
-my @hourArr;
-my @gasArr;
-
 my %dayHash = ( 0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0,
                 5 => 0, 6 => 0, 7 => 0, 8 => 0, 9 => 0,
                10 => 0,11 => 0,12 => 0,13 => 0,14 => 0,
@@ -73,7 +70,7 @@ my %dayHash = ( 0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0,
               );
 
 # fill day hour array for correct sequence during print with a hash
-my @dayhourhArr = (0 .. 24);
+my @dayhourArr = (0 .. 24);
 
 # to get the content from hash for graph plot
 my @GasValues;
@@ -90,15 +87,14 @@ foreach my $row (@$res)
 }
 
 # print dayHash for tests and push into @GasValues for data for graph plot
-for my $i(0..$#dayhourhArr)
+for my $i(0..$#dayhourArr)
 {
-    push (@GasValues, $dayHash{$dayhourhArr[$i]});
-    #print "$dayhourhArr[$i]: $dayHash{$dayhourhArr[$i]}\n";
+    push (@GasValues, $dayHash{$dayhourArr[$i]});
+    #print "$dayhourArr[$i]: $dayHash{$dayhourArr[$i]}\n";
 }
 
-#my $maxYAxisValue = max @gasArr;    # max value for the y axis
 my $maxYAxisValue = max values (%dayHash);     # max value for the y axis from a hash
- 
+
 my $date = localtime->strftime('%a, %d.%m.%Y');
 
 #my $graph = GD::Graph::area->new(1600, 600);
@@ -115,9 +111,8 @@ $graph->set(
     transparent       => 0,
     long_ticks        => 1,
 ) or die $graph->error;
- 
-#my @data = (\@hourArr,\@gasArr);
-my @data = (\@dayhourhArr,\@GasValues);
+
+my @data = (\@dayhourArr,\@GasValues);
 
 $date = localtime->strftime('%Y');
 $graph->set( dclrs => [ qw(green) ] );
