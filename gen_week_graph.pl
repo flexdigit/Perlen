@@ -15,7 +15,7 @@ use Time::Piece;                # For the date in the graph
 ##################################################
 # for productiv run on Pi #1
 #
-my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
+my $path2GasDB= "...";
 
 # open DB
 my $dbh = DBI->connect(
@@ -45,6 +45,9 @@ my $res = $dbh->selectall_arrayref($week_sql_query) or die $dbh->errstr();
 $dbh->disconnect();
 
 my @dayArr;             # Array which contains the days from DB
+                        # I don't fill this array from "Mon" to "Sun" cause
+                        # sqp query takes the last 7 days which then also
+                        # come e.g. with "Wen" to "Tue".
 my @ticksArr;           # Array which contains the sum of ticks from DB
 
 # save what we got from SQL query
@@ -69,23 +72,23 @@ $graph->set(
     y_label           => 'gas consumption [m^3]',
     #title             => 'Total gas consumption for CW '.$date.': '.$WeeklySum.' m^3',
     title             => 'Total gas consumption for last 7 days :'.$WeeklySum.' m^3',
-    
+
     # shadows
     bar_spacing     => 10,
     shadow_depth    => 4,
     shadowclr       => 'dgreen',
-    
+
     y_max_value       => $maxYAxisValue,
     #y_tick_number     => 4,
     #y_label_skip      => 2,
     #x_label_skip      => 5,
     long_ticks        => 1,
-    
+
     accent_treshold => 200,
     transparent       => 0,
-    
+
 ) or die $graph->error;
- 
+
 my @data = (\@dayArr,\@ticksArr);
 $date = localtime->strftime('%Y');
 $graph->set( dclrs => [ qw(green) ] );
@@ -93,8 +96,9 @@ $graph->set_legend_font('GD::gdMediumBoldFont');
 $graph->set_legend('Gas consumption for one week - (C) '.$date.' flexdigit');
 
 my $gd = $graph->plot(\@data) or die $graph->error;
- 
+
 #open(IMG, '>week_bars.png') or die $!;
 open(IMG, '>/home/pi/temperature/week_bars.png') or die $!;
 binmode IMG;
 print IMG $gd->png;
+
