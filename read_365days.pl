@@ -5,16 +5,9 @@ use strict;
 use DBI;
 
 #####################################################################
-# 
 # reads from Gasmeter.db monthly gas consumption and generated into
 # index.htm a table.
-# 
 #####################################################################
-
-##################################################
-# for development on Desktop
-#
-#my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
 
 ##################################################
 # for productiv run on Pi #1
