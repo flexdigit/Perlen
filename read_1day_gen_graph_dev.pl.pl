@@ -8,11 +8,6 @@ use List::Util qw( min max );   # To find quick the max value of @gasArr
 use Time::Piece;                # For the date in the graph
 
 ##################################################
-# for development on Desktop
-#
-my $path2GasDB= "/home/georg/Rasp-Pis/No1/GPIO/Gasmeter.db";
-
-##################################################
 # for productiv run on Pi #1
 #
 #my $path2GasDB= "/home/pi/GPIO/Gasmeter.db";
